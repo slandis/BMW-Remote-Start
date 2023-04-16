@@ -1,15 +1,24 @@
-# BMW F30 REMOTE START
-BMW F30 Remote start project, made with Arduino
+This project is based on code written by Alberto Marziali (https://github.com/AlbertoMarziali)
+The original repositry resides at https://github.com/AlbertoMarziali/bmw_remote_start
+
+There is a major change from how Alberto managed the pre-start system.
+- We no longer need to solder to the key fob PCB to lock/unlock the car.
+- Instead we drive the arm/disarm and lock/unlock signals directly
+
+# BMW F3x REMOTE START
+BMW F3x Remote Start Project
+- Currently testing using an Arduino UNO board, SeeedStudio CANBUS Shield, and mechanical relay board
+- Future plans to utilize a custom PCB with a Cortex-M0, MCP2515, and solid state relays
 
 # Features
-This project allows to do this things:
+This project allows us to do the following things:
 - If the engine is off, remote start the car with a triple click on the lock button of the OEM keyfob.
 - After 15 minutes from remote start, if no one started driving, automatically shut off the car
 - If the engine is on, remote stop the car with a triple click on the lock button of the OEM keyfob.
 - You have to unlock the car before driving it (why wouldn't you) or it will perform an emergency anti-thief stop
 
 # How it works
-The Arduino, thanks to the MCP2515 board, constantly listen to the BMW K-CAN2 bus, looking for a triple lock button click. If found, it starts a 18 seconds long operation, during which it does those steps:
+The Arduino+CANBUS Shield listen to the BMW K-CAN2 bus looking for a triple lock button click. If this even is seen it starts a 18 seconds long operation, during which it does those steps:
 1. Turns on the in-car keyfob
 2. Unlocks the car
 3. Locks the car 
@@ -27,7 +36,7 @@ If someone tries to engage a gear with the car remote started, without unlocking
 
 **The spare key is always in the car. Wouldn't this be enough to allow a thief to turn on the engine?**
 
-Yes, but actually no. The Arduino turns on the keyfob only when it needs it to remote start. Normally the key isn't powered so the car doesn't see it and can't be turned on!
+Yes, but actualy no. The Arduino turns on the keyfob only when it needs it to remote start. Normally the key isn't powered so the car doesn't see it and can't be turned on!
 
 
 
@@ -35,11 +44,11 @@ Yes, but actually no. The Arduino turns on the keyfob only when it needs it to r
 
 The lock and unlock thing is needed to be able to turn on the ignition. This is because of the BMW security protocol, which disables the possibility of turning on the car if the car wasn't opened before. This is not a security issues though, because this process happens in 2 seconds and the car remains open for just 1 second.
 
-# Required things
+# Currently used hardware
 Here's a list of things you need for this project:
-- Arduino Nano
+- Arduino UNO or MEGA
 - LM2596S voltage regulator board, with the output regulated to 5V
-- MCP2515 Canbus board (Niren)
+- SeeedStudio CANBUS Shield
 - 6x Relay Board with 5V relays
 - 2x 560Ω (to replicate the start button internal 560Ω resistor) 
 - 1x 1100Ω (to replicate the 12mA current outputted by the hall sensor inside the brake light switch)
@@ -52,37 +61,43 @@ For example:
 
 # Wiring
 You have to do the wiring for:
-- KCan2 bus
+- K-CAN2 bus
 - 12V and GND
-- Brake light switch
-- Start button switches
+- Brake light
+- Start button
+- Central lock/unlock actuation
+- Door locks/anti-theft actuation
 - Keyfob battery
-- Keyfob lock switch
-- Keyfob unlock switch
+
 
 ## Car Wiring
 
 **KCAN2**
 
 Attention: the OBD2 port doesn't have KCAN2. You can't use it. You have to take KCAN2 from the FEM
-- KCAN2_H: FEM A173\*8B, pin 50
-- KCAN2_L: FEM A173\*8B, pin 49
+- KCAN2_H: FEM A173\*8B - pin 50
+- KCAN2_L: FEM A173\*8B - pin 49
 
 
 **12V and GND**
 
 Attention: you can't use the 12V plug as power source, you need an always-powered 12V source. You can find it at the FEM.
-- 12V: FEM A173\*3B, pin 33
-- GND: FEM A173\*3B, pin 6
+- 12V: ATM Fuse Tap, Main 12V Supply (FEM A173\*3B, pin 33)
+- GND: Body Screw near FEM (FEM A173\*3B, pin 6)
 
 
 **Brake Light Switch and Start-Stop Button**
 
-Here you can see how to wire break light switch and start/stop button:
-- The start-stop button wiring is right behind the switch button, just pull it out.
-- The break light switch wiring is above the brake pedal.
+- BRAKE: FEM A173\*3B - Pin 22
+- START/STOP: FEM A173\*7B - Pins 45, 49
 
-![CAR Wiring](images/wiring_1.png)
+
+**KeyFob Lock and Unlock buttons**
+
+You have to simulate the press of the switch using the relay. To do that, just hook to the key switches like that:
+- DOOR LOCKS: FEM A173\*4B - Pin 16
+- CENTRAL LOCKS: FEM A173\*2B - Pin 30
+
 
 ## KeyFob Wiring
 
@@ -90,34 +105,10 @@ Here you can see how to wire break light switch and start/stop button:
 
 You have to interrupt the battery positive connection, split it in 2 wires and feed them inside the relay:
 
-![KEY_POWER wiring](images/wiring_2.jpg)
 
 
-**KeyFob Lock and Unlock buttons**
+# Plans
+I plan to have custom PCBs with enclosures and wiring harnesses available for sale.
 
-You have to simulate the press of the switch using the relay. To do that, just hook to the key switches like that:
-
-![KEY_LOCK/UNLOCK wiring](images/wiring_3.jpg)
-
-## Arduino wiring
-
-**Schematic**
-
-You can follow this schematic to build everything.
-Note: this schematic shows a 8x relay board, but you can use a 6x one
-
-![arduino wiring](images/wiring_4.png)
-
-
-**Final look**
-
-This is the final look, with the spare key wired. You have to hide it somewhere inside the car.
-(it's ugly, I know. You can make it definitely better)
-![arduino_final wiring](images/wiring_5.jpg)
-
-
-# Credits
-autowp for [arduino-mcp2515 library](https://github.com/autowp/arduino-mcp2515)
-
-# Donate
-If you like my work, feel free to [donate me](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=96KHFR9W2UR7E&source=url)! I would highly appreciate it!
+# Future
+Additional ideas are to add WiFi/4G connectivity to allow for remote starting/setting HVAC from a phone.
